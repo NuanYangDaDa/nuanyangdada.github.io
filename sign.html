@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手签合同</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        #pdf-container {
+            width: 100%;
+            height: 60vh;
+        }
+
+        #signature-pad {
+            border: 1px solid #ccc;
+            width: 100%;
+            height: 30vh;
+        }
+
+        button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="pdf-container">
+        <!-- 这里替换为实际的 PDF 文件路径 -->
+        <embed src="file:///C:/Users/rxd/Desktop/%E5%90%91%E4%B8%8A%E7%AA%81%E7%A0%B4/%E6%B5%81%E9%87%8F%E4%B8%BB%E8%B4%A2%E5%8A%A1.pdf" width="100%" height="100%" type="application/pdf">
+    </div>
+    <canvas id="signature-pad"></canvas>
+    <button id="clear-button">清除签名</button>
+    <button id="save-button">保存签名</button>
+    <script>
+        const canvas = document.getElementById('signature-pad');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        // 调整画布大小以适应屏幕
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = document.getElementById('signature-pad').clientHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // 开始绘制
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        });
+
+        // 绘制过程
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDrawing) {
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(e.offsetX, e.offsetY);
+                ctx.stroke();
+                [lastX, lastY] = [e.offsetX, e.offsetY];
+            }
+        });
+
+        // 结束绘制
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+
+        // 鼠标移出画布
+        canvas.addEventListener('mouseout', () => {
+            isDrawing = false;
+        });
+
+        // 触摸事件支持
+        canvas.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            isDrawing = true;
+            [lastX, lastY] = [touch.offsetX || touch.layerX, touch.offsetY || touch.layerY];
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            if (isDrawing) {
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(touch.offsetX || touch.layerX, touch.offsetY || touch.layerY);
+                ctx.stroke();
+                [lastX, lastY] = [touch.offsetX || touch.layerX, touch.offsetY || touch.layerY];
+            }
+        });
+
+        canvas.addEventListener('touchend', () => {
+            isDrawing = false;
+        });
+
+        // 清除签名
+        document.getElementById('clear-button').addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        // 保存签名
+        document.getElementById('save-button').addEventListener('click', () => {
+            const signatureData = canvas.toDataURL('image/png');
+            fetch('/save-signature', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ signature: signatureData })
+            })
+              .then(response => response.json())
+              .then(data => {
+                    if (data.success) {
+                        alert('签名保存成功！');
+                    } else {
+                        alert('签名保存失败，请重试。');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('保存签名时发生错误，请重试。');
+                })
+ 
+        });
+    </script>
+</body>
+
+</html>
